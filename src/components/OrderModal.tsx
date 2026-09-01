@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import SellIcon from '@mui/icons-material/Sell';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { PortfolioItem } from '../types/portfolio';
 
 export interface OrderModalProps {
@@ -62,6 +63,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   const parsedQty = parseFloat(quantity) || 0;
   const parsedPrice = parseFloat(price) || 0;
   const totalValue = parsedQty * parsedPrice;
+
+  // Calculate +-20% reference price range
+  const refPrice = item.avgPrice;
+  const minRangePrice = refPrice * 0.8;
+  const maxRangePrice = refPrice * 1.2;
+  const isOutsideBand = parsedPrice > 0 && (parsedPrice < minRangePrice || parsedPrice > maxRangePrice);
 
   // Background styling: Light green for Buy, Light red for Sell
   const dialogBgColor = isBuy ? '#122c1e' : '#331417';
@@ -146,25 +153,41 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               }}
             />
 
-            {/* Per Share Cost Input (in ₹) */}
-            <TextField
-              label="Per Share Cost (₹)"
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder={isBuy ? 'Enter price per share' : 'Selling price'}
-              fullWidth
-              required
-              inputProps={{ min: 0.01, step: 0.05 }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: 'rgba(255, 255, 255, 0.04)',
-                  '&.Mui-focused': {
-                    bgcolor: 'rgba(255, 255, 255, 0.08)',
+            {/* Per Share Cost Input (in ₹) - Validation Removed, +-20% Range Indicator */}
+            <Box>
+              <TextField
+                label="Per Share Cost (₹)"
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder={isBuy ? 'Enter price per share' : 'Selling price'}
+                fullWidth
+                required
+                inputProps={{ step: 'any' }}
+                helperText={`±20% Circuit Band: ${formatINR(minRangePrice)} - ${formatINR(maxRangePrice)}`}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'rgba(255, 255, 255, 0.04)',
+                    '&.Mui-focused': {
+                      bgcolor: 'rgba(255, 255, 255, 0.08)',
+                    },
                   },
-                },
-              }}
-            />
+                  '& .MuiFormHelperText-root': {
+                    color: isOutsideBand ? '#ffb74d' : 'text.secondary',
+                    fontWeight: isOutsideBand ? 600 : 400,
+                  },
+                }}
+              />
+
+              {isOutsideBand && (
+                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.8, color: '#ffb74d' }}>
+                  <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+                  <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                    Entered price is outside standard ±20% circuit band, but allowed.
+                  </Typography>
+                </Stack>
+              )}
+            </Box>
 
             <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
 
