@@ -21,6 +21,7 @@ import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { PortfolioItem } from '../types/portfolio';
+import { OrderModal } from './OrderModal';
 
 // Initial default Indian stock portfolio in INR (₹)
 const defaultIndianPortfolio: PortfolioItem[] = [
@@ -45,6 +46,11 @@ export const Portfolio: React.FC = () => {
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>(defaultIndianPortfolio);
   const [loading, setLoading] = useState<boolean>(true);
   const [firestoreStatus, setFirestoreStatus] = useState<string>('Connecting to Firestore Holdings...');
+
+  // Modal State
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [modalType, setModalType] = useState<'BUY' | 'SELL'>('BUY');
+  const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
 
   // Firestore Real-time listener on 'Holdings' document ('Holdings/current')
   useEffect(() => {
@@ -103,18 +109,56 @@ export const Portfolio: React.FC = () => {
     }
   };
 
-  const handleBuy = (item: PortfolioItem) => {
-    const updated = portfolio.map((p) =>
-      p.id === item.id ? { ...p, quantity: p.quantity + 1 } : p
-    );
-    setPortfolio(updated);
-    syncToFirestore(updated);
+  const handleOpenBuyModal = (item: PortfolioItem) => {
+    setSelectedItem(item);
+    setModalType('BUY');
+    setModalOpen(true);
   };
 
-  const handleSell = (item: PortfolioItem) => {
-    const updated = portfolio.map((p) =>
-      p.id === item.id && p.quantity > 0 ? { ...p, quantity: p.quantity - 1 } : p
-    );
+  const handleOpenSellModal = (item: PortfolioItem) => {
+    setSelectedItem(item);
+    setModalType('SELL');
+    setModalOpen(true);
+  };
+
+  const handleOrderSubmit = (
+    type: 'BUY' | 'SELL',
+    targetItem: PortfolioItem,
+    qty: number,
+    price: number
+  ) => {
+    let updated: PortfolioItem[];
+
+    if (type === 'BUY') {
+      // Recalculate weighted average price on buy
+      updated = portfolio.map((item) => {
+        if (item.id === targetItem.id) {
+          const currentTotal = item.quantity * item.avgPrice;
+          const buyTotal = qty * price;
+          const newQty = item.quantity + qty;
+          const newAvgPrice = newQty > 0 ? (currentTotal + buyTotal) / newQty : price;
+          return {
+            ...item,
+            quantity: newQty,
+            avgPrice: Math.round(newAvgPrice * 100) / 100,
+          };
+        }
+        return item;
+      });
+    } else {
+      // Deduct quantity on sell
+      updated = portfolio.map((item) => {
+        if (item.id === targetItem.id) {
+          const newQty = Math.max(0, item.quantity - qty);
+          return {
+            ...item,
+            quantity: newQty,
+          };
+        }
+        return item;
+      });
+    }
+
     setPortfolio(updated);
     syncToFirestore(updated);
   };
@@ -206,11 +250,11 @@ export const Portfolio: React.FC = () => {
                     </TableCell>
                     <TableCell align="center">
                       <Stack direction="row" spacing={1} justifyContent="center">
-                        {/* Buy Button: Small, bold B text, green background */}
+                        {/* Buy Button: Opens Buy Modal */}
                         <Button
                           variant="contained"
                           size="small"
-                          onClick={() => handleBuy(row)}
+                          onClick={() => handleOpenBuyModal(row)}
                           sx={{
                             bgcolor: '#00c853',
                             color: '#ffffff',
@@ -228,11 +272,11 @@ export const Portfolio: React.FC = () => {
                           B
                         </Button>
 
-                        {/* Sell Button: Small, bold S text, red background */}
+                        {/* Sell Button: Opens Sell Modal */}
                         <Button
                           variant="contained"
                           size="small"
-                          onClick={() => handleSell(row)}
+                          onClick={() => handleOpenSellModal(row)}
                           sx={{
                             bgcolor: '#d50000',
                             color: '#ffffff',
@@ -258,6 +302,15 @@ export const Portfolio: React.FC = () => {
           </Table>
         </TableContainer>
       )}
+
+      {/* Interactive Order Modal */}
+      <OrderModal
+        open={modalOpen}
+        type={modalType}
+        item={selectedItem}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleOrderSubmit}
+      />
     </Box>
   );
 };
