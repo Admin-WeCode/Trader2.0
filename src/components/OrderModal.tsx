@@ -164,7 +164,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 fullWidth
                 required
                 inputProps={{ step: 'any' }}
-                helperText={`±20% Circuit Band: ${formatINR(minRangePrice)} - ${formatINR(maxRangePrice)}`}
+                helperText={`Circuit Band: ${formatINR(minRangePrice)} - ${formatINR(maxRangePrice)}`}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: 'rgba(255, 255, 255, 0.04)',
