@@ -5,3 +5,4 @@ export interface PortfolioItem {
   quantity: number;
   avgPrice: number;
 }
+
