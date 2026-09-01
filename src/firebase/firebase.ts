@@ -15,3 +15,4 @@ export const app = initializeApp(firebaseConfig);
 
 // Initialize Cloud Firestore Instance
 export const db = getFirestore(app);
+
