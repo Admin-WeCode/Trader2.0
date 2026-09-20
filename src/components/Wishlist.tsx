@@ -313,63 +313,63 @@ export const Wishlist: React.FC = () => {
 
               return (
                 <TableRow key={row.id} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.02)' } }}>
-                  {/* Share Name Column with Inline Holding Symbol & Tooltip */}
+                  {/* Share Name Column with Inline Holding Symbol & Tooltip aligned with Share Name */}
                   <TableCell component="th" scope="row">
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <Box>
+                    <Box>
+                      <Stack direction="row" alignItems="center" spacing={1}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                           {row.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {row.symbol}
-                        </Typography>
-                      </Box>
 
-                      {/* Portfolio Holding Symbol & Hover Tooltip next to Share Name */}
-                      {holdingMatch && (
-                        <Tooltip
-                          arrow
-                          placement="right"
-                          title={
-                            <Box sx={{ p: 1 }}>
-                              <Stack direction="row" alignItems="center" spacing={0.5} sx={{ borderBottom: '1px solid rgba(255,255,255,0.2)', pb: 0.5, mb: 1 }}>
-                                <VerifiedIcon sx={{ fontSize: 16, color: '#00e676' }} />
-                                <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
-                                  Portfolio Holding: {holdingMatch.symbol}
+                        {/* Portfolio Holding Symbol & Hover Tooltip aligned next to Share Name */}
+                        {holdingMatch && (
+                          <Tooltip
+                            arrow
+                            placement="right"
+                            title={
+                              <Box sx={{ p: 1 }}>
+                                <Stack direction="row" alignItems="center" spacing={0.5} sx={{ borderBottom: '1px solid rgba(255,255,255,0.2)', pb: 0.5, mb: 1 }}>
+                                  <VerifiedIcon sx={{ fontSize: 16, color: '#00e676' }} />
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                                    Portfolio Holding: {holdingMatch.symbol}
+                                  </Typography>
+                                </Stack>
+                                <Typography variant="body2">
+                                  <strong>Quantity Held:</strong> {holdingMatch.quantity} shares
                                 </Typography>
-                              </Stack>
-                              <Typography variant="body2">
-                                <strong>Quantity Held:</strong> {holdingMatch.quantity} shares
-                              </Typography>
-                              <Typography variant="body2">
-                                <strong>Avg Purchase Price:</strong> {formatINR(holdingMatch.avgPrice)}
-                              </Typography>
-                              <Typography variant="body2" sx={{ color: '#00e676', mt: 0.5 }}>
-                                <strong>Total Invested Value:</strong> {formatINR(holdingMatch.quantity * holdingMatch.avgPrice)}
-                              </Typography>
-                            </Box>
-                          }
-                        >
-                          <Chip
-                            icon={<AccountBalanceWalletIcon sx={{ fontSize: '13px !important', color: '#00c853 !important' }} />}
-                            label={`${holdingMatch.quantity}`}
-                            size="small"
-                            sx={{
-                              bgcolor: 'rgba(0, 200, 83, 0.15)',
-                              color: '#00e676',
-                              border: '1px solid rgba(0, 200, 83, 0.4)',
-                              fontWeight: 700,
-                              height: 22,
-                              fontSize: '0.72rem',
-                              cursor: 'pointer',
-                              '&:hover': {
-                                bgcolor: 'rgba(0, 200, 83, 0.25)',
-                              },
-                            }}
-                          />
-                        </Tooltip>
-                      )}
-                    </Stack>
+                                <Typography variant="body2">
+                                  <strong>Avg Purchase Price:</strong> {formatINR(holdingMatch.avgPrice)}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#00e676', mt: 0.5 }}>
+                                  <strong>Total Invested Value:</strong> {formatINR(holdingMatch.quantity * holdingMatch.avgPrice)}
+                                </Typography>
+                              </Box>
+                            }
+                          >
+                            <Chip
+                              icon={<AccountBalanceWalletIcon sx={{ fontSize: '13px !important', color: '#00c853 !important' }} />}
+                              label={`${holdingMatch.quantity}`}
+                              size="small"
+                              sx={{
+                                bgcolor: 'rgba(0, 200, 83, 0.15)',
+                                color: '#00e676',
+                                border: '1px solid rgba(0, 200, 83, 0.4)',
+                                fontWeight: 700,
+                                height: 22,
+                                fontSize: '0.72rem',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                  bgcolor: 'rgba(0, 200, 83, 0.25)',
+                                },
+                              }}
+                            />
+                          </Tooltip>
+                        )}
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        {row.symbol}
+                      </Typography>
+                    </Box>
                   </TableCell>
 
                   <TableCell>
