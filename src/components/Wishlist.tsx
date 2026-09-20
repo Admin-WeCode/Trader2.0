@@ -329,7 +329,9 @@ export const Wishlist: React.FC = () => {
           <TableHead sx={{ bgcolor: 'rgba(255, 255, 255, 0.04)' }}>
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }}>Share Name</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Wishlists (`List` field)</TableCell>
+              {selectedCategory === 'All' && (
+                <TableCell sx={{ fontWeight: 700 }}>List</TableCell>
+              )}
               <TableCell align="right" sx={{ fontWeight: 700 }}>Market Price</TableCell>
               <TableCell align="center" sx={{ fontWeight: 700 }}>Actions</TableCell>
             </TableRow>
@@ -402,21 +404,23 @@ export const Wishlist: React.FC = () => {
                     </Box>
                   </TableCell>
 
-                  {/* Combined Wishlist Chips */}
-                  <TableCell>
-                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                      {row.lists.map((listName) => (
-                        <Chip
-                          key={listName}
-                          label={listName}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                          sx={{ fontWeight: 600 }}
-                        />
-                      ))}
-                    </Stack>
-                  </TableCell>
+                  {/* Combined Wishlist Chips (only shown on 'All' tab) */}
+                  {selectedCategory === 'All' && (
+                    <TableCell>
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {row.lists.map((listName) => (
+                          <Chip
+                            key={listName}
+                            label={listName}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            sx={{ fontWeight: 600 }}
+                          />
+                        ))}
+                      </Stack>
+                    </TableCell>
+                  )}
 
                   <TableCell align="right" sx={{ fontWeight: 600 }}>
                     {formatINR(row.currentPrice)}
