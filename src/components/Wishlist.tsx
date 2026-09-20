@@ -30,6 +30,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { WishlistItem } from '../types/wishlist';
@@ -42,6 +43,10 @@ interface CombinedWishlistRow {
   currentPrice: number;
   lists: string[];
   ids: string[];
+}
+
+interface WishlistProps {
+  onNavigateToSettings?: () => void;
 }
 
 const defaultWishlistItems: WishlistItem[] = [
@@ -73,8 +78,9 @@ const formatINR = (val: number) => {
   }).format(val);
 };
 
-export const Wishlist: React.FC = () => {
+export const Wishlist: React.FC<WishlistProps> = ({ onNavigateToSettings }) => {
   const [wishlist, setWishlist] = useState<WishlistItem[]>(defaultWishlistItems);
+  const [customOrder, setCustomOrder] = useState<string[]>([]);
   const [portfolioHoldings, setPortfolioHoldings] = useState<PortfolioItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [statusNotice, setStatusNotice] = useState<string>('Syncing Wishlists with Cloud Firestore...');
@@ -107,6 +113,9 @@ export const Wishlist: React.FC = () => {
             const data = snapshot.data();
             if (data && Array.isArray(data.items)) {
               setWishlist(data.items);
+              if (Array.isArray(data.customOrder)) {
+                setCustomOrder(data.customOrder);
+              }
               setStatusNotice('Live Wishlists synced from Cloud Firestore.');
             }
           } else {
@@ -141,21 +150,31 @@ export const Wishlist: React.FC = () => {
   }, []);
 
   // Sync Wishlists to Firestore
-  const syncWishlistsToFirestore = async (updated: WishlistItem[]) => {
+  const syncWishlistsToFirestore = async (updated: WishlistItem[], order?: string[]) => {
     try {
       const docRef = doc(db, 'Wishlists', 'current');
-      await updateDoc(docRef, { items: updated });
+      const payload: any = { items: updated };
+      if (order) payload.customOrder = order;
+      await updateDoc(docRef, payload);
     } catch {
       try {
         const docRef = doc(db, 'Wishlists', 'current');
-        await setDoc(docRef, { items: updated });
+        const payload: any = { items: updated };
+        if (order) payload.customOrder = order;
+        await setDoc(docRef, payload);
       } catch {}
     }
   };
 
-  // Get unique wishlist names
-  const existingLists = Array.from(new Set(wishlist.map((item) => item.List)));
-  const allTabCategories = ['All', ...existingLists];
+  // Get unique wishlist names respecting customOrder from Settings
+  const rawLists = Array.from(new Set(wishlist.map((item) => item.List)));
+  const orderedLists = customOrder.length > 0
+    ? [
+        ...customOrder.filter((l) => rawLists.includes(l)),
+        ...rawLists.filter((l) => !customOrder.includes(l)),
+      ]
+    : rawLists;
+  const allTabCategories = ['All', ...orderedLists];
 
   // Filter raw items based on selected tab
   const rawFilteredItems =
@@ -202,8 +221,10 @@ export const Wishlist: React.FC = () => {
     };
 
     const updated = [...wishlist, newItem];
+    const newOrder = orderedLists.includes(listName) ? orderedLists : [...orderedLists, listName];
     setWishlist(updated);
-    syncWishlistsToFirestore(updated);
+    setCustomOrder(newOrder);
+    syncWishlistsToFirestore(updated, newOrder);
     setSelectedCategory(listName);
     setNewWishlistName('');
     setCreateWishlistDialogOpen(false);
@@ -224,11 +245,13 @@ export const Wishlist: React.FC = () => {
       };
 
       const updated = [...wishlist, newItem];
+      const newOrder = orderedLists.includes(listName) ? orderedLists : [...orderedLists, listName];
       setWishlist(updated);
-      syncWishlistsToFirestore(updated);
+      setCustomOrder(newOrder);
+      syncWishlistsToFirestore(updated, newOrder);
       setAddStockOpen(false);
       setCustomNewList('');
-      if (!existingLists.includes(listName)) {
+      if (!orderedLists.includes(listName)) {
         setSelectedCategory(listName);
       }
     }
@@ -237,7 +260,7 @@ export const Wishlist: React.FC = () => {
   const handleRemoveCombinedRow = (idsToRemove: string[]) => {
     const updated = wishlist.filter((item) => !idsToRemove.includes(item.id));
     setWishlist(updated);
-    syncWishlistsToFirestore(updated);
+    syncWishlistsToFirestore(updated, customOrder);
   };
 
   // Order modal triggers from wishlist
@@ -345,6 +368,25 @@ export const Wishlist: React.FC = () => {
               <PlaylistAddIcon />
             </IconButton>
           </Tooltip>
+
+          {onNavigateToSettings && (
+            <Tooltip title="Manage Wishlists (Settings)">
+              <IconButton
+                onClick={onNavigateToSettings}
+                sx={{
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: 2,
+                  p: 1,
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.08)',
+                  },
+                }}
+              >
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+
           <Button
             variant="contained"
             color="primary"
@@ -575,7 +617,7 @@ export const Wishlist: React.FC = () => {
                 onChange={(e) => setTargetListName(e.target.value)}
                 fullWidth
               >
-                {existingLists.map((list) => (
+                {orderedLists.map((list) => (
                   <MenuItem key={list} value={list}>
                     {list}
                   </MenuItem>

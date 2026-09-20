@@ -8,14 +8,18 @@ import {
   Tabs,
   Tab,
   Chip,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import StorageIcon from '@mui/icons-material/Storage';
 import PieChartIcon from '@mui/icons-material/PieChart';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { db } from './firebase/firebase';
 import { Portfolio } from './components/Portfolio';
 import { Wishlist } from './components/Wishlist';
+import { Settings } from './components/Settings';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<number>(0);
@@ -40,7 +44,22 @@ export const App: React.FC = () => {
             color={isFirestoreReady ? 'success' : 'warning'}
             variant="outlined"
             size="small"
+            sx={{ mr: 1.5 }}
           />
+          <Tooltip title="Settings">
+            <IconButton
+              color={activeTab === 2 ? 'primary' : 'default'}
+              onClick={() => setActiveTab(2)}
+              size="small"
+              sx={{
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: 2,
+                p: 1,
+              }}
+            >
+              <SettingsIcon />
+            </IconButton>
+          </Tooltip>
         </Toolbar>
 
         {/* Navigation Tabs for Page Components */}
@@ -48,6 +67,7 @@ export const App: React.FC = () => {
           <Tabs value={activeTab} onChange={handleTabChange} textColor="primary" indicatorColor="primary">
             <Tab icon={<PieChartIcon />} iconPosition="start" label="Portfolio" />
             <Tab icon={<BookmarkBorderIcon />} iconPosition="start" label="Wishlist" />
+            <Tab icon={<SettingsIcon />} iconPosition="start" label="Settings" />
           </Tabs>
         </Box>
       </AppBar>
@@ -55,7 +75,8 @@ export const App: React.FC = () => {
       {/* Main Container rendering active page component */}
       <Container maxWidth="lg" sx={{ mt: 4, pb: 6 }}>
         {activeTab === 0 && <Portfolio />}
-        {activeTab === 1 && <Wishlist />}
+        {activeTab === 1 && <Wishlist onNavigateToSettings={() => setActiveTab(2)} />}
+        {activeTab === 2 && <Settings onBackToWishlist={() => setActiveTab(1)} />}
       </Container>
     </Box>
   );
