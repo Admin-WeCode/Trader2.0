@@ -328,16 +328,23 @@ export const Wishlist: React.FC = () => {
             Manage custom stock watchlists with combined share views and holding indicators
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1.5}>
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<PlaylistAddIcon />}
-            onClick={() => setCreateWishlistDialogOpen(true)}
-            sx={{ fontWeight: 700 }}
-          >
-            Create Custom Wishlist
-          </Button>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <Tooltip title="Create Custom Wishlist">
+            <IconButton
+              color="primary"
+              onClick={() => setCreateWishlistDialogOpen(true)}
+              sx={{
+                border: '1px solid rgba(0, 230, 118, 0.5)',
+                borderRadius: 2,
+                p: 1,
+                '&:hover': {
+                  bgcolor: 'rgba(0, 230, 118, 0.1)',
+                },
+              }}
+            >
+              <PlaylistAddIcon />
+            </IconButton>
+          </Tooltip>
           <Button
             variant="contained"
             color="primary"
