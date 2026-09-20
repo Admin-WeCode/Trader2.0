@@ -35,6 +35,14 @@ import { WishlistItem } from '../types/wishlist';
 import { PortfolioItem } from '../types/portfolio';
 import { OrderModal } from './OrderModal';
 
+interface CombinedWishlistRow {
+  symbol: string;
+  name: string;
+  currentPrice: number;
+  lists: string[];
+  ids: string[];
+}
+
 const defaultWishlistItems: WishlistItem[] = [
   { id: 'w1', List: 'Tech', name: 'Tata Consultancy Services', symbol: 'TCS', currentPrice: 4280.50 },
   { id: 'w2', List: 'Tech', name: 'Infosys Ltd', symbol: 'INFY', currentPrice: 1840.00 },
@@ -143,11 +151,33 @@ export const Wishlist: React.FC = () => {
   const existingLists = Array.from(new Set(wishlist.map((item) => item.List)));
   const allTabCategories = ['All', ...existingLists];
 
-  // Filtered items for selected tab
-  const filteredItems =
+  // Filter raw items based on selected tab
+  const rawFilteredItems =
     selectedCategory === 'All'
       ? wishlist
       : wishlist.filter((item) => item.List === selectedCategory);
+
+  // Group items by stock symbol so duplicate shares in multiple wishlists combine into 1 row
+  const groupedMap = new Map<string, CombinedWishlistRow>();
+  rawFilteredItems.forEach((item) => {
+    if (!groupedMap.has(item.symbol)) {
+      groupedMap.set(item.symbol, {
+        symbol: item.symbol,
+        name: item.name,
+        currentPrice: item.currentPrice,
+        lists: [item.List],
+        ids: [item.id],
+      });
+    } else {
+      const existing = groupedMap.get(item.symbol)!;
+      if (!existing.lists.includes(item.List)) {
+        existing.lists.push(item.List);
+      }
+      existing.ids.push(item.id);
+    }
+  });
+
+  const displayRows = Array.from(groupedMap.values());
 
   const handleAddStockSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,17 +204,17 @@ export const Wishlist: React.FC = () => {
     }
   };
 
-  const handleRemoveItem = (id: string) => {
-    const updated = wishlist.filter((item) => item.id !== id);
+  const handleRemoveCombinedRow = (idsToRemove: string[]) => {
+    const updated = wishlist.filter((item) => !idsToRemove.includes(item.id));
     setWishlist(updated);
     syncWishlistsToFirestore(updated);
   };
 
   // Order modal triggers from wishlist
-  const handleOpenBuy = (item: WishlistItem) => {
+  const handleOpenBuy = (item: CombinedWishlistRow) => {
     const holdingMatch = portfolioHoldings.find((h) => h.symbol === item.symbol);
     setOrderModalItem({
-      id: holdingMatch?.id || item.id,
+      id: holdingMatch?.id || item.ids[0],
       name: item.name,
       symbol: item.symbol,
       quantity: holdingMatch?.quantity || 0,
@@ -194,10 +224,10 @@ export const Wishlist: React.FC = () => {
     setOrderModalOpen(true);
   };
 
-  const handleOpenSell = (item: WishlistItem) => {
+  const handleOpenSell = (item: CombinedWishlistRow) => {
     const holdingMatch = portfolioHoldings.find((h) => h.symbol === item.symbol);
     setOrderModalItem({
-      id: holdingMatch?.id || item.id,
+      id: holdingMatch?.id || item.ids[0],
       name: item.name,
       symbol: item.symbol,
       quantity: holdingMatch?.quantity || 0,
@@ -265,7 +295,7 @@ export const Wishlist: React.FC = () => {
             Wishlists
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Manage custom stock watchlists with inline portfolio holding indicators
+            Manage custom stock watchlists with combined share views and holding indicators
           </Typography>
         </Box>
         <Button
@@ -299,20 +329,20 @@ export const Wishlist: React.FC = () => {
           <TableHead sx={{ bgcolor: 'rgba(255, 255, 255, 0.04)' }}>
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }}>Share Name</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Wishlist (`List` field)</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Wishlists (`List` field)</TableCell>
               <TableCell align="right" sx={{ fontWeight: 700 }}>Market Price</TableCell>
               <TableCell align="center" sx={{ fontWeight: 700 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredItems.map((row) => {
+            {displayRows.map((row) => {
               // Cross-reference with Portfolio Holdings
               const holdingMatch = portfolioHoldings.find(
                 (h) => h.symbol === row.symbol && h.quantity > 0
               );
 
               return (
-                <TableRow key={row.id} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.02)' } }}>
+                <TableRow key={row.symbol} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.02)' } }}>
                   {/* Share Name Column with Inline Holding Symbol & Tooltip aligned with Share Name */}
                   <TableCell component="th" scope="row">
                     <Box>
@@ -372,14 +402,20 @@ export const Wishlist: React.FC = () => {
                     </Box>
                   </TableCell>
 
+                  {/* Combined Wishlist Chips */}
                   <TableCell>
-                    <Chip
-                      label={row.List}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                      sx={{ fontWeight: 600 }}
-                    />
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {row.lists.map((listName) => (
+                        <Chip
+                          key={listName}
+                          label={listName}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          sx={{ fontWeight: 600 }}
+                        />
+                      ))}
+                    </Stack>
                   </TableCell>
 
                   <TableCell align="right" sx={{ fontWeight: 600 }}>
@@ -407,7 +443,7 @@ export const Wishlist: React.FC = () => {
                         S
                       </Button>
 
-                      <IconButton size="small" color="error" onClick={() => handleRemoveItem(row.id)}>
+                      <IconButton size="small" color="error" onClick={() => handleRemoveCombinedRow(row.ids)}>
                         <DeleteOutlineIcon fontSize="small" />
                       </IconButton>
                     </Stack>
