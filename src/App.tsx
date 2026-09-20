@@ -12,8 +12,10 @@ import {
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import StorageIcon from '@mui/icons-material/Storage';
 import PieChartIcon from '@mui/icons-material/PieChart';
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import { db } from './firebase/firebase';
 import { Portfolio } from './components/Portfolio';
+import { Wishlist } from './components/Wishlist';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<number>(0);
@@ -45,6 +47,7 @@ export const App: React.FC = () => {
         <Box sx={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', px: 2 }}>
           <Tabs value={activeTab} onChange={handleTabChange} textColor="primary" indicatorColor="primary">
             <Tab icon={<PieChartIcon />} iconPosition="start" label="Portfolio" />
+            <Tab icon={<BookmarkBorderIcon />} iconPosition="start" label="Wishlist" />
           </Tabs>
         </Box>
       </AppBar>
@@ -52,6 +55,7 @@ export const App: React.FC = () => {
       {/* Main Container rendering active page component */}
       <Container maxWidth="lg" sx={{ mt: 4, pb: 6 }}>
         {activeTab === 0 && <Portfolio />}
+        {activeTab === 1 && <Wishlist />}
       </Container>
     </Box>
   );
