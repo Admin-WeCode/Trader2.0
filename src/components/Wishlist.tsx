@@ -33,7 +33,7 @@ import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
-import { WishlistItem } from '../types/wishlist';
+import { WishlistItem, defaultWishlistItems, defaultWishlistOrder } from '../types/wishlist';
 import { PortfolioItem } from '../types/portfolio';
 import { OrderModal } from './OrderModal';
 
@@ -48,15 +48,6 @@ interface CombinedWishlistRow {
 interface WishlistProps {
   onNavigateToSettings?: () => void;
 }
-
-const defaultWishlistItems: WishlistItem[] = [
-  { id: 'w1', List: 'Tech', name: 'Tata Consultancy Services', symbol: 'TCS', currentPrice: 4280.50 },
-  { id: 'w2', List: 'Tech', name: 'Infosys Ltd', symbol: 'INFY', currentPrice: 1840.00 },
-  { id: 'w3', List: 'Tata', name: 'Tata Consultancy Services', symbol: 'TCS', currentPrice: 4280.50 },
-  { id: 'w4', List: 'Tata', name: 'Tata Motors', symbol: 'TATAMOTORS', currentPrice: 980.25 },
-  { id: 'w5', List: 'Banking', name: 'HDFC Bank', symbol: 'HDFCBANK', currentPrice: 1620.75 },
-  { id: 'w6', List: 'Banking', name: 'ICICI Bank', symbol: 'ICICIBANK', currentPrice: 1210.30 },
-];
 
 const availableStockCatalog = [
   { name: 'Tata Consultancy Services', symbol: 'TCS', price: 4280.50 },
@@ -80,7 +71,7 @@ const formatINR = (val: number) => {
 
 export const Wishlist: React.FC<WishlistProps> = ({ onNavigateToSettings }) => {
   const [wishlist, setWishlist] = useState<WishlistItem[]>(defaultWishlistItems);
-  const [customOrder, setCustomOrder] = useState<string[]>([]);
+  const [customOrder, setCustomOrder] = useState<string[]>(defaultWishlistOrder);
   const [portfolioHoldings, setPortfolioHoldings] = useState<PortfolioItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [statusNotice, setStatusNotice] = useState<string>('Syncing Wishlists with Cloud Firestore...');

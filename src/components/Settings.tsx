@@ -27,17 +27,18 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SettingsIcon from '@mui/icons-material/Settings';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
-import { WishlistItem } from '../types/wishlist';
+import { WishlistItem, defaultWishlistItems, defaultWishlistOrder } from '../types/wishlist';
 
 interface SettingsProps {
   onBackToWishlist?: () => void;
 }
 
 export const Settings: React.FC<SettingsProps> = ({ onBackToWishlist }) => {
-  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
-  const [customOrder, setCustomOrder] = useState<string[]>([]);
+  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(defaultWishlistItems);
+  const [customOrder, setCustomOrder] = useState<string[]>(defaultWishlistOrder);
   const [statusNotice, setStatusNotice] = useState<string>('');
 
   // Rename Dialog State
@@ -48,6 +49,10 @@ export const Settings: React.FC<SettingsProps> = ({ onBackToWishlist }) => {
   // Delete Dialog State
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [targetListToDelete, setTargetListToDelete] = useState<string>('');
+
+  // Create List Dialog State
+  const [createDialogOpen, setCreateDialogOpen] = useState<boolean>(false);
+  const [createdListName, setCreatedListName] = useState<string>('');
 
   // Listen to Wishlists document in Firestore
   useEffect(() => {
@@ -70,17 +75,27 @@ export const Settings: React.FC<SettingsProps> = ({ onBackToWishlist }) => {
                 });
                 setCustomOrder(merged);
               } else {
-                setCustomOrder(foundLists);
+                setCustomOrder(foundLists.length > 0 ? foundLists : defaultWishlistOrder);
               }
             }
+          } else {
+            // Initialize document with default wishlist items and order
+            setDoc(wishlistDocRef, {
+              items: defaultWishlistItems,
+              customOrder: defaultWishlistOrder,
+            }).catch(() => {});
           }
         },
         () => {
           setStatusNotice('Using local wishlist data');
+          setWishlistItems(defaultWishlistItems);
+          setCustomOrder(defaultWishlistOrder);
         }
       );
     } catch {
       setStatusNotice('Using local wishlist data');
+      setWishlistItems(defaultWishlistItems);
+      setCustomOrder(defaultWishlistOrder);
     }
     return () => unsubscribe();
   }, []);
@@ -166,6 +181,25 @@ export const Settings: React.FC<SettingsProps> = ({ onBackToWishlist }) => {
     setStatusNotice(`Deleted wishlist "${targetListToDelete}"`);
   };
 
+  // Create new list directly from Settings
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = createdListName.trim();
+    if (!trimmed) return;
+    if (customOrder.includes(trimmed)) {
+      setStatusNotice(`Wishlist "${trimmed}" already exists.`);
+      setCreateDialogOpen(false);
+      return;
+    }
+
+    const newOrder = [...customOrder, trimmed];
+    setCustomOrder(newOrder);
+    syncToFirestore(wishlistItems, newOrder);
+    setCreatedListName('');
+    setCreateDialogOpen(false);
+    setStatusNotice(`Created new wishlist "${trimmed}"`);
+  };
+
   // Count items per list
   const getShareCount = (listName: string) => {
     return wishlistItems.filter((item) => item.List === listName).length;
@@ -183,11 +217,22 @@ export const Settings: React.FC<SettingsProps> = ({ onBackToWishlist }) => {
             Manage your wishlists, customize tab order, rename, or delete lists
           </Typography>
         </Box>
-        {onBackToWishlist && (
-          <Button variant="outlined" color="primary" onClick={onBackToWishlist} sx={{ fontWeight: 700 }}>
-            Back to Wishlists
+        <Stack direction="row" spacing={1.5}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<PlaylistAddIcon />}
+            onClick={() => setCreateDialogOpen(true)}
+            sx={{ fontWeight: 700 }}
+          >
+            New Wishlist
           </Button>
-        )}
+          {onBackToWishlist && (
+            <Button variant="outlined" color="primary" onClick={onBackToWishlist} sx={{ fontWeight: 700 }}>
+              Back to Wishlists
+            </Button>
+          )}
+        </Stack>
       </Box>
 
       {statusNotice && (
@@ -211,7 +256,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBackToWishlist }) => {
 
           {customOrder.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
-              No wishlists found.
+              No wishlists found. Click "New Wishlist" to add one.
             </Typography>
           ) : (
             <Paper variant="outlined" sx={{ bgcolor: 'rgba(255, 255, 255, 0.02)', borderColor: 'rgba(255, 255, 255, 0.08)' }}>
@@ -290,6 +335,31 @@ export const Settings: React.FC<SettingsProps> = ({ onBackToWishlist }) => {
           )}
         </CardContent>
       </Card>
+
+      {/* Create Wishlist Dialog */}
+      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="xs" fullWidth>
+        <form onSubmit={handleCreateSubmit}>
+          <DialogTitle sx={{ fontWeight: 700 }}>New Wishlist</DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Wishlist Name"
+              value={createdListName}
+              onChange={(e) => setCreatedListName(e.target.value)}
+              placeholder="e.g. EV Stocks, Energy, Dividends"
+              fullWidth
+              autoFocus
+              required
+              sx={{ mt: 1 }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" color="primary" disabled={!createdListName.trim()} sx={{ fontWeight: 700 }}>
+              Create
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
 
       {/* Rename Dialog */}
       <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)} maxWidth="xs" fullWidth>
