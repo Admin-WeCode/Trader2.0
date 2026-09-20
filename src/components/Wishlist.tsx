@@ -29,6 +29,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import VerifiedIcon from '@mui/icons-material/Verified';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { WishlistItem } from '../types/wishlist';
@@ -78,11 +79,16 @@ export const Wishlist: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [statusNotice, setStatusNotice] = useState<string>('Syncing Wishlists with Cloud Firestore...');
 
-  // Dialog States
+  // Add Stock Dialog State
   const [addStockOpen, setAddStockOpen] = useState<boolean>(false);
   const [selectedStockSymbol, setSelectedStockSymbol] = useState<string>(availableStockCatalog[0].symbol);
   const [targetListName, setTargetListName] = useState<string>('Tech');
   const [customNewList, setCustomNewList] = useState<string>('');
+
+  // Create Custom Wishlist Dialog State
+  const [createWishlistDialogOpen, setCreateWishlistDialogOpen] = useState<boolean>(false);
+  const [newWishlistName, setNewWishlistName] = useState<string>('');
+  const [initialStockSymbol, setInitialStockSymbol] = useState<string>(availableStockCatalog[0].symbol);
 
   // Order Modal State
   const [orderModalOpen, setOrderModalOpen] = useState<boolean>(false);
@@ -178,6 +184,30 @@ export const Wishlist: React.FC = () => {
   });
 
   const displayRows = Array.from(groupedMap.values());
+
+  // Handle creating a brand new custom wishlist
+  const handleCreateWishlistSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const listName = newWishlistName.trim();
+    if (!listName) return;
+
+    const stockInfo = availableStockCatalog.find((s) => s.symbol === initialStockSymbol) || availableStockCatalog[0];
+
+    const newItem: WishlistItem = {
+      id: `w_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      List: listName,
+      name: stockInfo.name,
+      symbol: stockInfo.symbol,
+      currentPrice: stockInfo.price,
+    };
+
+    const updated = [...wishlist, newItem];
+    setWishlist(updated);
+    syncWishlistsToFirestore(updated);
+    setSelectedCategory(listName);
+    setNewWishlistName('');
+    setCreateWishlistDialogOpen(false);
+  };
 
   const handleAddStockSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -298,15 +328,26 @@ export const Wishlist: React.FC = () => {
             Manage custom stock watchlists with combined share views and holding indicators
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={() => setAddStockOpen(true)}
-          sx={{ fontWeight: 700 }}
-        >
-          Add Share to Wishlist
-        </Button>
+        <Stack direction="row" spacing={1.5}>
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<PlaylistAddIcon />}
+            onClick={() => setCreateWishlistDialogOpen(true)}
+            sx={{ fontWeight: 700 }}
+          >
+            Create Custom Wishlist
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => setAddStockOpen(true)}
+            sx={{ fontWeight: 700 }}
+          >
+            Add Share to Wishlist
+          </Button>
+        </Stack>
       </Box>
 
       {/* Wishlist Categories / Filter Tabs */}
@@ -458,6 +499,47 @@ export const Wishlist: React.FC = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Dedicated Create Custom Wishlist Dialog */}
+      <Dialog open={createWishlistDialogOpen} onClose={() => setCreateWishlistDialogOpen(false)} maxWidth="xs" fullWidth>
+        <form onSubmit={handleCreateWishlistSubmit}>
+          <DialogTitle sx={{ fontWeight: 700 }}>Create Custom Wishlist</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2.5} sx={{ mt: 1 }}>
+              <TextField
+                label="Wishlist Title / Name"
+                value={newWishlistName}
+                onChange={(e) => setNewWishlistName(e.target.value)}
+                placeholder="e.g. Energy, EV Stocks, Dividend"
+                required
+                fullWidth
+                autoFocus
+                helperText="Stored in the `List` field in the Firestore document."
+              />
+
+              <TextField
+                select
+                label="Initial Stock to Add"
+                value={initialStockSymbol}
+                onChange={(e) => setInitialStockSymbol(e.target.value)}
+                fullWidth
+              >
+                {availableStockCatalog.map((stock) => (
+                  <MenuItem key={stock.symbol} value={stock.symbol}>
+                    {stock.name} ({stock.symbol}) - {formatINR(stock.price)}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2.5 }}>
+            <Button onClick={() => setCreateWishlistDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" color="primary" disabled={!newWishlistName.trim()} sx={{ fontWeight: 700 }}>
+              Create Wishlist
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
 
       {/* Add Stock to Wishlist Dialog */}
       <Dialog open={addStockOpen} onClose={() => setAddStockOpen(false)} maxWidth="xs" fullWidth>
