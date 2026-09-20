@@ -27,7 +27,8 @@ import {
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import VerifiedIcon from '@mui/icons-material/Verified';
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { WishlistItem } from '../types/wishlist';
@@ -264,7 +265,7 @@ export const Wishlist: React.FC = () => {
             Wishlists
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Manage custom stock watchlists with real-time portfolio holdings cross-referencing
+            Manage custom stock watchlists with inline portfolio holding indicators
           </Typography>
         </Box>
         <Button
@@ -300,7 +301,6 @@ export const Wishlist: React.FC = () => {
               <TableCell sx={{ fontWeight: 700 }}>Share Name</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Wishlist (`List` field)</TableCell>
               <TableCell align="right" sx={{ fontWeight: 700 }}>Market Price</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700 }}>Portfolio Holding Status</TableCell>
               <TableCell align="center" sx={{ fontWeight: 700 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -313,13 +313,63 @@ export const Wishlist: React.FC = () => {
 
               return (
                 <TableRow key={row.id} sx={{ '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.02)' } }}>
+                  {/* Share Name Column with Inline Holding Symbol & Tooltip */}
                   <TableCell component="th" scope="row">
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                      {row.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {row.symbol}
-                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                          {row.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {row.symbol}
+                        </Typography>
+                      </Box>
+
+                      {/* Portfolio Holding Symbol & Hover Tooltip next to Share Name */}
+                      {holdingMatch && (
+                        <Tooltip
+                          arrow
+                          placement="right"
+                          title={
+                            <Box sx={{ p: 1 }}>
+                              <Stack direction="row" alignItems="center" spacing={0.5} sx={{ borderBottom: '1px solid rgba(255,255,255,0.2)', pb: 0.5, mb: 1 }}>
+                                <VerifiedIcon sx={{ fontSize: 16, color: '#00e676' }} />
+                                <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                                  Portfolio Holding: {holdingMatch.symbol}
+                                </Typography>
+                              </Stack>
+                              <Typography variant="body2">
+                                <strong>Quantity Held:</strong> {holdingMatch.quantity} shares
+                              </Typography>
+                              <Typography variant="body2">
+                                <strong>Avg Purchase Price:</strong> {formatINR(holdingMatch.avgPrice)}
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: '#00e676', mt: 0.5 }}>
+                                <strong>Total Invested Value:</strong> {formatINR(holdingMatch.quantity * holdingMatch.avgPrice)}
+                              </Typography>
+                            </Box>
+                          }
+                        >
+                          <Chip
+                            icon={<AccountBalanceWalletIcon sx={{ fontSize: '13px !important', color: '#00c853 !important' }} />}
+                            label={`${holdingMatch.quantity}`}
+                            size="small"
+                            sx={{
+                              bgcolor: 'rgba(0, 200, 83, 0.15)',
+                              color: '#00e676',
+                              border: '1px solid rgba(0, 200, 83, 0.4)',
+                              fontWeight: 700,
+                              height: 22,
+                              fontSize: '0.72rem',
+                              cursor: 'pointer',
+                              '&:hover': {
+                                bgcolor: 'rgba(0, 200, 83, 0.25)',
+                              },
+                            }}
+                          />
+                        </Tooltip>
+                      )}
+                    </Stack>
                   </TableCell>
 
                   <TableCell>
@@ -334,45 +384,6 @@ export const Wishlist: React.FC = () => {
 
                   <TableCell align="right" sx={{ fontWeight: 600 }}>
                     {formatINR(row.currentPrice)}
-                  </TableCell>
-
-                  {/* Portfolio Holdings Status with Hover Tooltip */}
-                  <TableCell align="center">
-                    {holdingMatch ? (
-                      <Tooltip
-                        arrow
-                        placement="top"
-                        title={
-                          <Box sx={{ p: 1 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.2)', pb: 0.5, mb: 1 }}>
-                              {holdingMatch.name} ({holdingMatch.symbol})
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>Quantity:</strong> {holdingMatch.quantity} shares
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>Avg Purchase Price:</strong> {formatINR(holdingMatch.avgPrice)}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: '#00e676', mt: 0.5 }}>
-                              <strong>Total Value:</strong> {formatINR(holdingMatch.quantity * holdingMatch.avgPrice)}
-                            </Typography>
-                          </Box>
-                        }
-                      >
-                        <Chip
-                          icon={<InfoOutlinedIcon />}
-                          label={`Holding: ${holdingMatch.quantity} shares`}
-                          color="success"
-                          variant="filled"
-                          size="small"
-                          sx={{ fontWeight: 700, cursor: 'pointer' }}
-                        />
-                      </Tooltip>
-                    ) : (
-                      <Typography variant="caption" color="text.secondary">
-                        Not in holdings
-                      </Typography>
-                    )}
                   </TableCell>
 
                   <TableCell align="center">

@@ -5,3 +5,4 @@ export interface WishlistItem {
   symbol: string;
   currentPrice: number;
 }
+
